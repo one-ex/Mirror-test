@@ -22,8 +22,21 @@ class PixelDrainMirror:
         self.session = requests.Session()
         if self.api_key:
             self.session.auth = HTTPBasicAuth('', self.api_key)
+        
+        # Enhanced headers to avoid 403 errors
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
         })
 
     def extract_filename(self, url):
@@ -50,8 +63,24 @@ class PixelDrainMirror:
         try:
             print(f"[*] Connecting to source...")
             
-            # Start streaming download and upload in one go (like mirror-test.py)
-            with self.session.get(source_url, stream=True, allow_redirects=True, timeout=TIMEOUT) as source_response:
+            # Add retry logic for 403 errors
+            max_retries = 3
+            retry_delay = 2
+            
+            for attempt in range(max_retries):
+                try:
+                    # Start streaming download and upload in one go (like mirror-test.py)
+                    with self.session.get(source_url, stream=True, allow_redirects=True, timeout=TIMEOUT) as source_response:
+                        source_response.raise_for_status()
+                        break  # Success, exit retry loop
+                except requests.exceptions.HTTPError as e:
+                    if e.response.status_code == 403 and attempt < max_retries - 1:
+                        print(f"[!] 403 Forbidden, retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries})")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                        continue
+                    else:
+                        raise
                 source_response.raise_for_status()
                 
                 # Extract filename using the same logic as mirror-test.py
@@ -60,6 +89,13 @@ class PixelDrainMirror:
                 filename = os.path.basename(path.replace('/download', ''))
                 if not filename:
                     filename = "mirrored_file.zip"
+                
+                # Add referer spoofing for SourceForge
+                if 'sourceforge.net' in final_url or 'downloads.sourceforge.net' in final_url:
+                    self.session.headers.update({
+                        'Referer': 'https://sourceforge.net/',
+                        'Origin': 'https://sourceforge.net'
+                    })
                 
                 total_size = int(source_response.headers.get('content-length', 0))
                 
@@ -107,6 +143,15 @@ class PixelDrainMirror:
                 
                 # Upload to PixelDrain
                 upload_url = f"https://pixeldrain.com/api/file/{quote(filename)}"
+                
+                # Add session cookies if available (for authenticated sessions)
+                if 'sourceforge.net' in final_url:
+                    # Add common SourceForge bypass headers
+                    self.session.headers.update({
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Forwarded-For': '8.8.8.8',  # Google DNS as fake IP
+                        'CF-Connecting-IP': '8.8.8.8'
+                    })
                 
                 upload_response = self.session.put(
                     upload_url,
