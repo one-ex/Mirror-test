@@ -1,2 +1,4 @@
 mirror-test.py
 venv/
+test_mirror.sh
+test_mirror_fixed.sh

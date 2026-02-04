@@ -11,8 +11,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configuration - Updated to match mirror-test.py (10MB chunks)
-DEFAULT_CHUNK_SIZE = 100 * 1024 * 1024  # 10MB chunks (same as mirror-test.py)
+# Configuration - Updated to match mirror-test.py (50MB chunks)
+DEFAULT_CHUNK_SIZE = 50 * 1024 * 1024  # 50MB chunks (same as mirror-test.py)
 MAX_RETRIES = 3
 TIMEOUT = 300  # 5 minutes timeout
 
@@ -23,20 +23,9 @@ class PixelDrainMirror:
         if self.api_key:
             self.session.auth = HTTPBasicAuth('', self.api_key)
         
-        # Enhanced headers to avoid 403 errors
+        # Use simple headers like working mirror-test.py
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
-            'Cache-Control': 'max-age=0',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36',
         })
 
     def extract_filename(self, url):
@@ -57,8 +46,8 @@ class PixelDrainMirror:
     def mirror_with_progress(self, source_url, progress_callback=None):
         """Mirror file from source to PixelDrain with progress tracking - Updated logic from mirror-test.py"""
         
-        # Use 10MB chunk size like in mirror-test.py
-        CHUNK_SIZE = 10 * 1024 * 1024
+        # Use 50MB chunk size like in mirror-test.py
+        CHUNK_SIZE = 50 * 1024 * 1024
         
         try:
             print(f"[*] Connecting to source...")
@@ -99,8 +88,8 @@ class PixelDrainMirror:
                 
                 total_size = int(source_response.headers.get('content-length', 0))
                 
-                print(f"[*] Filename: {filename}")
-                print(f"[*] Size: {total_size / (1024*1024):.2f} MB")
+                print(f"[*] Nama File : {filename}")
+                print(f"[*] Ukuran    : {total_size / (1024*1024):.2f} MB")
                 print(f"[*] Chunk Size: {CHUNK_SIZE / (1024*1024)} MB")
                 print("-" * 50)
                 
@@ -128,7 +117,7 @@ class PixelDrainMirror:
                             speed = (bytes_done / (1024 * 1024)) / elapsed if elapsed > 0 else 0
                             
                             # Show progress (like mirror-test.py)
-                            progress_msg = f"[>] Progress: {percent:.2f}% | Sent: {bytes_done/(1024*1024):.1f}MB | Speed: {speed:.2f} MB/s"
+                            progress_msg = f"[>] Progress: {percent:.2f}% | Terkirim: {bytes_done/(1024*1024):.1f}MB | Speed: {speed:.2f} MB/s"
                             print(progress_msg, end='\r', flush=True)
                             
                             if progress_callback:
@@ -164,8 +153,8 @@ class PixelDrainMirror:
                 if upload_response.status_code in [200, 201]:
                     result = upload_response.json()
                     
-                    success_msg = f"[V] BERHASIL! URL: https://pixeldrain.com/u/{result['id']}"
-                    print(f"\n{success_msg}")
+                    print(f"\n\n[V] BERHASIL!")
+                    print(f"[V] URL: https://pixeldrain.com/u/{result['id']}")
                     
                     if progress_callback:
                         progress_callback({
@@ -173,7 +162,7 @@ class PixelDrainMirror:
                             'file_id': result['id'],
                             'url': f"https://pixeldrain.com/u/{result['id']}",
                             'size': result.get('size', 0),
-                            'message': success_msg
+                            'message': f"[V] BERHASIL! URL: https://pixeldrain.com/u/{result['id']}"
                         })
                     
                     return {
