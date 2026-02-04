@@ -51,130 +51,101 @@ class PixelDrainMirror:
         
         try:
             print(f"[*] Connecting to source...")
+            print(f"[*] Menghubungkan ke SourceForge...")
             
-            # Add retry logic for 403 errors
-            max_retries = 3
-            retry_delay = 2
+            # Use allow_redirects=True and stream=True like mirror-test.py
+            source_response = self.session.get(source_url, stream=True, allow_redirects=True, timeout=TIMEOUT)
+            source_response.raise_for_status()
             
-            for attempt in range(max_retries):
-                try:
-                    # Start streaming download and upload in one go (like mirror-test.py)
-                    with self.session.get(source_url, stream=True, allow_redirects=True, timeout=TIMEOUT) as source_response:
-                        source_response.raise_for_status()
-                        break  # Success, exit retry loop
-                except requests.exceptions.HTTPError as e:
-                    if e.response.status_code == 403 and attempt < max_retries - 1:
-                        print(f"[!] 403 Forbidden, retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries})")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # Exponential backoff
-                        continue
-                    else:
-                        raise
-                source_response.raise_for_status()
+            # Extract filename using the same logic as mirror-test.py
+            final_url = source_response.url
+            path = urlparse(final_url).path
+            filename = os.path.basename(path.replace('/download', ''))
+            if not filename:
+                filename = "mirrored_file.zip"
+            
+            total_size = int(source_response.headers.get('content-length', 0))
+            
+            print(f"[*] Nama File : {filename}")
+            print(f"[*] Ukuran    : {total_size / (1024*1024):.2f} MB")
+            print(f"[*] Chunk Size: {CHUNK_SIZE / (1024*1024)} MB")
+            print("-" * 50)
+            
+            if progress_callback:
+                progress_callback({
+                    'status': 'starting',
+                    'filename': filename,
+                    'total_size': total_size,
+                    'message': f'Starting mirror for {filename}'
+                })
+            
+            # Generate stream with progress (mirror-test.py logic)
+            def generate_with_progress():
+                bytes_done = 0
+                start_time = time.time()
                 
-                # Extract filename using the same logic as mirror-test.py
-                final_url = source_response.url
-                path = urlparse(final_url).path
-                filename = os.path.basename(path.replace('/download', ''))
-                if not filename:
-                    filename = "mirrored_file.zip"
+                for chunk in source_response.iter_content(chunk_size=CHUNK_SIZE):
+                    if chunk:
+                        yield chunk
+                        bytes_done += len(chunk)
+                        
+                        # Calculate percentage and speed
+                        percent = (bytes_done / total_size) * 100 if total_size > 0 else 0
+                        elapsed = time.time() - start_time
+                        speed = (bytes_done / (1024 * 1024)) / elapsed if elapsed > 0 else 0
+                        
+                        # Show progress (like mirror-test.py)
+                        progress_msg = f"[>] Progress: {percent:.2f}% | Terkirim: {bytes_done/(1024*1024):.1f}MB | Speed: {speed:.2f} MB/s"
+                        print(progress_msg, end='\r', flush=True)
+                        
+                        if progress_callback:
+                            progress_callback({
+                                'status': 'transferring',
+                                'progress': percent,
+                                'speed_mbps': speed,
+                                'transferred': bytes_done,
+                                'total': total_size,
+                                'message': progress_msg
+                            })
+            
+            print()  # New line after progress
+            
+            # Upload to PixelDrain
+            upload_url = f"https://pixeldrain.com/api/file/{quote(filename)}"
+            
+            upload_response = self.session.put(
+                upload_url,
+                data=generate_with_progress(),
+                timeout=TIMEOUT
+            )
+            
+            print()  # New line after progress
+            
+            if upload_response.status_code in [200, 201]:
+                result = upload_response.json()
                 
-                # Add referer spoofing for SourceForge
-                if 'sourceforge.net' in final_url or 'downloads.sourceforge.net' in final_url:
-                    self.session.headers.update({
-                        'Referer': 'https://sourceforge.net/',
-                        'Origin': 'https://sourceforge.net'
-                    })
-                
-                total_size = int(source_response.headers.get('content-length', 0))
-                
-                print(f"[*] Nama File : {filename}")
-                print(f"[*] Ukuran    : {total_size / (1024*1024):.2f} MB")
-                print(f"[*] Chunk Size: {CHUNK_SIZE / (1024*1024)} MB")
-                print("-" * 50)
+                print(f"\n\n[V] BERHASIL!")
+                print(f"[V] URL: https://pixeldrain.com/u/{result['id']}")
                 
                 if progress_callback:
                     progress_callback({
-                        'status': 'starting',
-                        'filename': filename,
-                        'total_size': total_size,
-                        'message': f'Starting mirror for {filename}'
-                    })
-                
-                # Generate stream with progress (mirror-test.py logic)
-                def generate_with_progress():
-                    bytes_done = 0
-                    start_time = time.time()
-                    
-                    for chunk in source_response.iter_content(chunk_size=CHUNK_SIZE):
-                        if chunk:
-                            yield chunk
-                            bytes_done += len(chunk)
-                            
-                            # Calculate percentage and speed
-                            percent = (bytes_done / total_size) * 100 if total_size > 0 else 0
-                            elapsed = time.time() - start_time
-                            speed = (bytes_done / (1024 * 1024)) / elapsed if elapsed > 0 else 0
-                            
-                            # Show progress (like mirror-test.py)
-                            progress_msg = f"[>] Progress: {percent:.2f}% | Terkirim: {bytes_done/(1024*1024):.1f}MB | Speed: {speed:.2f} MB/s"
-                            print(progress_msg, end='\r', flush=True)
-                            
-                            if progress_callback:
-                                progress_callback({
-                                    'status': 'transferring',
-                                    'progress': percent,
-                                    'speed_mbps': speed,
-                                    'transferred': bytes_done,
-                                    'total': total_size,
-                                    'message': progress_msg
-                                })
-                
-                # Upload to PixelDrain
-                upload_url = f"https://pixeldrain.com/api/file/{quote(filename)}"
-                
-                # Add session cookies if available (for authenticated sessions)
-                if 'sourceforge.net' in final_url:
-                    # Add common SourceForge bypass headers
-                    self.session.headers.update({
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-Forwarded-For': '8.8.8.8',  # Google DNS as fake IP
-                        'CF-Connecting-IP': '8.8.8.8'
-                    })
-                
-                upload_response = self.session.put(
-                    upload_url,
-                    data=generate_with_progress(),
-                    timeout=TIMEOUT
-                )
-                
-                print()  # New line after progress
-                
-                if upload_response.status_code in [200, 201]:
-                    result = upload_response.json()
-                    
-                    print(f"\n\n[V] BERHASIL!")
-                    print(f"[V] URL: https://pixeldrain.com/u/{result['id']}")
-                    
-                    if progress_callback:
-                        progress_callback({
-                            'status': 'completed',
-                            'file_id': result['id'],
-                            'url': f"https://pixeldrain.com/u/{result['id']}",
-                            'size': result.get('size', 0),
-                            'message': f"[V] BERHASIL! URL: https://pixeldrain.com/u/{result['id']}"
-                        })
-                    
-                    return {
-                        'success': True,
+                        'status': 'completed',
                         'file_id': result['id'],
                         'url': f"https://pixeldrain.com/u/{result['id']}",
-                        'filename': filename,
-                        'size': result.get('size', 0)
-                    }
-                else:
-                    raise Exception(f"Upload failed: {upload_response.status_code} - {upload_response.text}")
-                    
+                        'size': result.get('size', 0),
+                        'message': f"[V] BERHASIL! URL: https://pixeldrain.com/u/{result['id']}"
+                    })
+                
+                return {
+                    'success': True,
+                    'file_id': result['id'],
+                    'url': f"https://pixeldrain.com/u/{result['id']}",
+                    'filename': filename,
+                    'size': result.get('size', 0)
+                }
+            else:
+                raise Exception(f"Upload failed: {upload_response.status_code} - {upload_response.text}")
+                
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error: {str(e)}"
             print(f"\n[!] Network error: {str(e)}")
