@@ -12,7 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configuration - Updated to match mirror-test.py (10MB chunks)
-DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024  # 10MB chunks (same as mirror-test.py)
+DEFAULT_CHUNK_SIZE = 100 * 1024 * 1024  # 10MB chunks (same as mirror-test.py)
 MAX_RETRIES = 3
 TIMEOUT = 300  # 5 minutes timeout
 
@@ -246,5 +246,8 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     
-    app.logger.info(f"Starting PixelDrain Mirror Service on port {port}")
+    print(f"[INFO] Starting PixelDrain Mirror Service on port {port}")
+    print(f"[INFO] Debug mode: {debug}")
+    print(f"[INFO] API Key configured: {'Yes' if os.getenv('PIXELDRAIN_API_KEY') else 'No'}")
+    
     app.run(host='0.0.0.0', port=port, debug=debug)
