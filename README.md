@@ -181,13 +181,19 @@ In Render dashboard:
 1. **"PIXELDRAIN_API_KEY not set"**
    - Solution: Set the API key in Render environment variables
 
-2. **"File size exceeds maximum"**
+2. **"Network is unreachable" or "Cannot reach PixelDrain"**
+   - **Problem**: Render.com blocks access to PixelDrain
+   - **Solution**: This is a known issue with Render's network restrictions
+   - **Test**: Use `GET /test-connection` endpoint to verify connectivity
+   - **Alternative**: Deploy to other platforms like Railway, Heroku, or VPS
+
+3. **"File size exceeds maximum"**
    - Solution: Increase `MAX_FILE_SIZE_MB` or use smaller files
 
-3. **"Network error"**
+4. **"Network error"**
    - Solution: Check source URL accessibility, try different URLs
 
-4. **Upload timeout**
+5. **Upload timeout**
    - Solution: Large files take time, check logs for progress
 
 ### Debug Mode

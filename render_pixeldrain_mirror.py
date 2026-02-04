@@ -53,6 +53,21 @@ class PixelDrainMirrorService:
             
         return filename
     
+    def test_pixeldrain_connection(self) -> bool:
+        """Test if we can reach PixelDrain from current environment"""
+        try:
+            # Test basic connectivity
+            response = self.session.get('https://pixeldrain.com', timeout=10)
+            if response.status_code == 200:
+                logger.info("✅ PixelDrain connectivity test passed")
+                return True
+            else:
+                logger.error(f"❌ PixelDrain connectivity test failed: Status {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"❌ Cannot reach PixelDrain: {str(e)}")
+            return False
+    
     def mirror_file(self, source_url: str, chunk_size: int = None) -> Dict[str, Any]:
         """Mirror file from source URL to PixelDrain"""
         if not chunk_size:
@@ -62,6 +77,10 @@ class PixelDrainMirrorService:
             raise ValueError("PIXELDRAIN_API_KEY is required")
             
         logger.info(f"Starting mirror from: {source_url}")
+        
+        # Test PixelDrain connectivity first
+        if not self.test_pixeldrain_connection():
+            raise Exception("Cannot reach PixelDrain. This might be a network restriction in the current environment.")
         
         try:
             # Connect to source
@@ -150,6 +169,23 @@ def health_check():
         'service': 'pixeldrain-mirror',
         'timestamp': int(time.time())
     })
+
+@app.route('/test-connection', methods=['GET'])
+def test_connection():
+    """Test connection to PixelDrain"""
+    try:
+        connectivity_test = mirror_service.test_pixeldrain_connection()
+        return jsonify({
+            'pixeldrain_reachable': connectivity_test,
+            'api_key_configured': bool(mirror_service.api_key),
+            'message': 'Connection test completed'
+        })
+    except Exception as e:
+        return jsonify({
+            'pixeldrain_reachable': False,
+            'api_key_configured': bool(mirror_service.api_key),
+            'error': str(e)
+        }), 500
 
 @app.route('/mirror', methods=['POST'])
 def mirror_endpoint():
