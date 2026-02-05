@@ -35,6 +35,15 @@ class PixelDrainMirrorService:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36',
         })
+
+        # Configure proxy if PROXY_URL is set
+        proxy_url = os.getenv('PROXY_URL')
+        if proxy_url:
+            logger.info(f"Using proxy for all requests: {proxy_url}")
+            self.session.proxies = {
+                "http": proxy_url,
+                "https": proxy_url,
+            }
         
     def extract_filename(self, response: requests.Response) -> str:
         """Extract filename from response headers or URL"""
