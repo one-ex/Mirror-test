@@ -252,4 +252,4 @@ if __name__ == '__main__':
     
     # Use Waitress for production
     from waitress import serve
-    serve(app, host='1.1.1.1', port=port)
+    serve(app, host='0.0.0.0', port=port)
