@@ -12,12 +12,19 @@ from urllib.parse import quote, urlparse
 import requests
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
+import subprocess
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+@app.route('/debug')
+def debug():
+    # Menjalankan perintah 'ping' atau 'curl' melalui kode
+    result = subprocess.run(['curl', '-I', 'https://pixeldrain.com'], capture_output=True, text=True)
+    return f"<pre>{result.stdout}\n{result.stderr}</pre>"
 
 class PixelDrainMirrorService:
     def __init__(self):
