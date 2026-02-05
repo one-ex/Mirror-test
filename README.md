@@ -1,221 +1,132 @@
-# PixelDrain Mirror Service
+---
+title: PixelDrain Mirror Service
+emoji: 📁
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+app_port: 7860
+---
 
-A production-ready web service that mirrors files from any URL to PixelDrain with streaming upload. Built with Flask and optimized for Render.com deployment.
+# PixelDrain Mirror Service 🚀
 
-## Features
+Mirror files from any URL to PixelDrain with **60-minute timeout** support for large files!
 
-- ✅ **Streaming Upload**: Memory-efficient file mirroring with chunk-based processing
-- ✅ **Progress Tracking**: Real-time upload progress with speed calculation
-- ✅ **REST API**: Simple HTTP endpoints for file mirroring
-- ✅ **Error Handling**: Comprehensive error handling and validation
-- ✅ **Production Ready**: Built with Waitress WSGI server for production use
-- ✅ **Configurable**: Environment variables for chunk size, max file size, etc.
+## ✨ New Features (v2.0)
 
-## Quick Start
+- **🕐 60-Minute Timeout**: Support for very large files
+- **📦 2GB File Size**: Maximum file size limit
+- **⚡ Progress Tracking**: Real-time upload progress
+- **📊 Speed Monitoring**: Track transfer speed
+- **⏱️ Time Estimation**: Estimated completion time
 
-### 1. Local Development
+## 🚀 Features
 
+- **Streaming Upload/Download**: Memory efficient for any file size
+- **Large File Support**: Handle files up to 2GB
+- **Progress Tracking**: Real-time logging every 30 seconds
+- **Speed Monitoring**: MB/s transfer rate display
+- **Error Handling**: Comprehensive error messages
+- **Timeout Handling**: Full 60-minute request timeout
+
+## 📋 API Usage
+
+### Mirror a File
 ```bash
-# Clone and setup
-git clone <your-repo>
-cd pixeldrain-mirror
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set environment variables
-cp .env.example .env
-# Edit .env with your PixelDrain API key
-
-# Run locally
-python render_pixeldrain_mirror.py
-```
-
-### 2. Test Locally
-
-```bash
-# Health check
-curl http://localhost:5000/health
-
-# Mirror a file
-curl -X POST http://localhost:5000/mirror \
+curl -X POST https://your-space.hf.space/mirror \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"}'
+  -d '{"url": "https://example.com/large-file.zip"}'
 ```
 
-## Render.com Deployment
-
-### 1. Create Render Account
-
-1. Go to [render.com](https://render.com) and sign up
-2. Connect your GitHub/GitLab account
-
-### 2. Create New Web Service
-
-1. Click "New" → "Web Service"
-2. Connect your repository
-3. Use these settings:
-   - **Name**: `pixeldrain-mirror`
-   - **Environment**: Python
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `python render_pixeldrain_mirror.py`
-
-### 3. Configure Environment Variables
-
-In Render dashboard, add these environment variables:
-
-```env
-PIXELDRAIN_API_KEY=your_pixeldrain_api_key_here
-CHUNK_SIZE_MB=50
-MAX_FILE_SIZE_MB=5000
-PORT=5000
+### Health Check
+```bash
+curl https://your-space.hf.space/health
 ```
 
-### 4. Deploy
-
-Click "Create Web Service" and wait for deployment to complete.
-
-## API Documentation
-
-### Endpoints
-
-#### `GET /health`
-Health check endpoint
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "service": "pixeldrain-mirror",
-  "timestamp": 1234567890
-}
+### Service Info
+```bash
+curl https://your-space.hf.space/info
 ```
 
-#### `POST /mirror`
-Mirror a file to PixelDrain
+## ⚙️ Configuration
 
-**Request:**
-```json
-{
-  "url": "https://example.com/file.zip",
-  "chunk_size_mb": 50  // optional, default: 50
-}
-```
+Add `PIXELDRAIN_API_KEY` in Space settings for authenticated uploads.
 
-**Response (Success):**
+## 📝 Limits
+
+- **Max File Size**: 2GB
+- **Timeout**: 60 minutes
+- **Supported URLs**: HTTP/HTTPS direct links
+- **Chunk Size**: 50MB for optimal performance
+
+## 🔄 Response Format
+
+### Success Response
 ```json
 {
   "success": true,
-  "file_id": "abc123",
-  "url": "https://pixeldrain.com/u/abc123",
-  "filename": "file.zip",
-  "size": 10485760,
-  "message": "File mirrored successfully"
+  "file_id": "abc123def",
+  "pixeldrain_url": "https://pixeldrain.com/u/abc123def",
+  "filename": "large-file.zip",
+  "size": 1073741824,
+  "upload_time_minutes": 12.5
 }
 ```
 
-**Response (Error):**
+### Error Response
 ```json
 {
-  "error": "Error message here"
+  "success": false,
+  "error": "File too large: 2.5GB > 2.0GB limit"
 }
 ```
 
-## Testing After Deployment
+## 🧪 Test Examples
 
-### 1. Health Check
-
+### Small File (Quick Test)
 ```bash
-# Replace with your actual Render URL
-curl https://your-app-name.onrender.com/health
-```
-
-### 2. Mirror Test File
-
-```bash
-# Small test file (fast)
-curl -X POST https://your-app-name.onrender.com/mirror \
+curl -X POST https://your-space.hf.space/mirror \
   -H "Content-Type: application/json" \
   -d '{"url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"}'
-
-# Medium test file
-curl -X POST https://your-app-name.onrender.com/mirror \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://github.com/git/git/archive/refs/tags/v2.34.0.zip"}'
-
-# Large test file (will take time)
-curl -X POST https://your-app-name.onrender.com/mirror \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US"}'
 ```
 
-### 3. Check Logs
+### Medium File (100MB)
+```bash
+curl -X POST https://your-space.hf.space/mirror \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://speed.hetzner.de/100MB.bin"}'
+```
 
-In Render dashboard:
-1. Go to your service
-2. Click "Logs" tab
-3. Monitor real-time logs
+### Large File (1GB) - Will take ~10 minutes
+```bash
+curl -X POST https://your-space.hf.space/mirror \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://speed.hetzner.de/1GB.bin"}'
+```
 
-## Configuration
+## 📊 Progress Monitoring
 
-### Environment Variables
+The service will log progress every 30 seconds:
+```
+📊 Progress: 15.3% | Speed: 8.5 MB/s
+📊 Progress: 30.7% | Speed: 8.2 MB/s
+📊 Progress: 46.1% | Speed: 8.7 MB/s
+```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PIXELDRAIN_API_KEY` | *required* | Your PixelDrain API key |
-| `CHUNK_SIZE_MB` | 50 | Chunk size for streaming (MB) |
-| `MAX_FILE_SIZE_MB` | 5000 | Maximum file size allowed (MB) |
-| `PORT` | 5000 | Server port |
+## 🔧 Troubleshooting
 
-### Getting PixelDrain API Key
+- **"Operation timed out"**: File terlalu besar atau koneksi lambat (>60 menit)
+- **"File not accessible"**: URL tidak valid atau membutuhkan autentikasi
+- **"Network error"**: PixelDrain atau source tidak dapat diakses
+- **Slow speed**: Tergantung koneksi antara HF Spaces → Source → PixelDrain
 
-1. Go to [pixeldrain.com](https://pixeldrain.com)
-2. Create account and login
-3. Go to [API Keys page](https://pixeldrain.com/user/api_keys)
-4. Generate new API key
+## 💡 Tips for Large Files
 
-## Troubleshooting
+1. **Test dengan file kecil dulu** untuk memastikan semua bekerja
+2. **Gunakan URL dengan speed tinggi** (seperti speedtest.net)
+3. **Monitor logs** untuk melihat progress 30-detik
+4. **Siapkan waktu**: 1GB butuh ~10 menit dengan kecepatan 10MB/s
 
-### Common Issues
+---
 
-1. **"PIXELDRAIN_API_KEY not set"**
-   - Solution: Set the API key in Render environment variables
-
-2. **"Network is unreachable" or "Cannot reach PixelDrain"**
-   - **Problem**: Render.com blocks access to PixelDrain
-   - **Solution**: This is a known issue with Render's network restrictions
-   - **Test**: Use `GET /test-connection` endpoint to verify connectivity
-   - **Alternative**: Deploy to other platforms like Railway, Heroku, or VPS
-
-3. **"File size exceeds maximum"**
-   - Solution: Increase `MAX_FILE_SIZE_MB` or use smaller files
-
-4. **"Network error"**
-   - Solution: Check source URL accessibility, try different URLs
-
-5. **Upload timeout**
-   - Solution: Large files take time, check logs for progress
-
-### Debug Mode
-
-Set `FLASK_ENV=development` for detailed logging.
-
-## Security Notes
-
-- API keys are stored in environment variables (never in code)
-- Service validates URLs and file sizes
-- No persistent storage - files go directly to PixelDrain
-- Use HTTPS endpoints only
-
-## Performance Tips
-
-- **Chunk Size**: 50MB default works well for most files
-- **Large Files**: Consider increasing chunk size to 100-200MB
-- **Network**: Deploy in region closest to your users
-- **Monitoring**: Use Render logs to monitor performance
-
-## Support
-
-- Check logs in Render dashboard
-- Test with different file sizes and sources
-- Monitor API rate limits on PixelDrain
+**Note**: Dengan timeout 60 menit, Anda bisa mirror file hingga **2GB**! 🎉
