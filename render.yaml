@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: pixeldrain-mirror
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python render_pixeldrain_mirror.py
+    envVars:
+      - key: PIXELDRAIN_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: CHUNK_SIZE_MB
+        value: 50
+      - key: MAX_FILE_SIZE_MB
+        value: 5000
+      - key: PORT
+        value: 5000

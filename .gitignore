@@ -1,29 +1,4 @@
-# Ignore file untuk Hugging Face Spaces
-.env
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
+mirror-test.py
 venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
-
-# File lama dari Render (sudah dihapus)
-# render.yaml
-# render_pixeldrain_mirror.py
-# network_test.py
+test_mirror.sh
+test_mirror_fixed.sh
